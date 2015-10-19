@@ -2,8 +2,11 @@
 __author__ = 'guenther@eberl.se'
 
 # Import program components / modules from python standard library / non-standard modules.
-import mainframe
+import frame_main
 
+import logging
+import logging.config
+import os
 import sys
 
 import wx
@@ -12,8 +15,12 @@ import wx
 class WxPythonDragDropTemplate(wx.App):
     def __init__(self):
         super(WxPythonDragDropTemplate, self).__init__()
-        self.frame = mainframe.MainFrame(None)
+        logger = logging.getLogger(__name__)
+        app_path = os.path.dirname(os.path.abspath(__file__)) + os.sep
+        logging.config.fileConfig(app_path + 'log_debug_to_terminal.ini', disable_existing_loggers=False)
+        self.frame = frame_main.FrameMain(None)
         self.SetTopWindow(self.frame)
+        logger.debug('Main: Loading GUI.')
         self.frame.Show()
 
 
