@@ -36,9 +36,9 @@ class FrameMain(frame_main_gui.FrameMain):
     def __init__(self, parent):
         frame_main_gui.FrameMain.__init__(self, parent)
 
-        # Setup queuing (necessary to get something returned from a separate thread).
-        self.status_queue = Queue.Queue()
-        self.continue_time_refresh = True
+        # Setup queuing (necessary to get communication to separate thread going).
+        self.queue_gui_to_function = Queue.Queue()
+        self.queue_function_to_gui = Queue.Queue()
 
         # Bind the "on close" event.
         self.Bind(wx.EVT_CLOSE, self.on_close)
@@ -60,15 +60,15 @@ class FrameMain(frame_main_gui.FrameMain):
             self.SetIcon(ico)
 
         # Adjust the background color of the static text widgets by manually specifying a color code in hex.
-        # self.background_color = '#e2e2e2'  # for background.png
-        self.background_color = '#ffffff'  # for background_alternative.png
+        self.background_color = '#e2e2e2'  # for background.png
+        # self.background_color = '#ffffff'  # for background_alternative.png
         # Transparent background is not supported out of the box for static text but can be achieved:
         #  http://www.keacher.com/994/transparent-static-text-in-wxpython/
         #  http://stackoverflow.com/questions/2179173/wxpython-statictext-on-transparent-background
         self.DropHereStaticText.SetBackgroundColour(self.background_color)
         self.OrBrowseStaticText.SetBackgroundColour(self.background_color)
-        self.ProgressStaticText.SetBackgroundColour(self.background_color)
-        self.WaitStaticText.SetBackgroundColour(self.background_color)
+        self.ProgressGaugeStaticText.SetBackgroundColour(self.background_color)
+        self.ProgressGifStaticText.SetBackgroundColour(self.background_color)
 
         # Set the window title.
         self.SetTitle('WxPythonDragDropTemplate')
@@ -106,12 +106,12 @@ class FrameMain(frame_main_gui.FrameMain):
             rect = self.GetUpdateRegion().GetBox()
             dc.SetClippingRect(rect)
         dc.Clear()
-        # background_image = wx.Bitmap(self.images_path + os.sep + 'background.png')
-        background_image = wx.Bitmap(self.images_path + os.sep + 'background_alternative.png')
+        background_image = wx.Bitmap(self.images_path + os.sep + 'background.png')
+        # background_image = wx.Bitmap(self.images_path + os.sep + 'background_alternative.png')
         dc.DrawBitmap(background_image, 0, 0)
 
     def gui_add_gif_animation(self):
-        gif_sizer = self.WaitStaticText.GetContainingSizer()
+        gif_sizer = self.ProgressGifStaticText.GetContainingSizer()
         ani = wx.animate.Animation(self.images_path + os.sep + 'spinner.gif')
         ctrl = wx.animate.AnimationCtrl(self.ProgressGifPanel, -1, ani)
         ctrl.SetBackgroundColour(self.background_color)
@@ -172,7 +172,7 @@ class FrameMain(frame_main_gui.FrameMain):
 
         # Function to process the files / folder.
         thread_2 = threading.Thread(target=function_to_call, name='function',
-                                    args=(self.status_queue, objects_to_process))
+                                    args=(self.queue_gui_to_function, self.queue_function_to_gui, objects_to_process))
         thread_2.daemon = False
         thread_2.start()
 
@@ -207,15 +207,18 @@ class FrameMain(frame_main_gui.FrameMain):
         while True:
             try:
                 # Store queue content in variable since reading an item from the queue also removes it from the queue.
-                current_message = self.status_queue.get()
+                current_message = self.queue_gui_to_function.get()
 
-                # Exit the loop as soon as a 'Finish', 'Cancel' or 'Error' message is found in queue.
+                # Exit this loop as soon as a 'Finish', 'Cancel' or 'Error' message is found in queue.
+                # Otherwise adjust the percentage value of the gauge or replace the text above it.
                 if current_message == u'Finish':
                     logger.info(u'Finished without error.')
                     break
                 elif current_message == u'Cancel':
-                    logger.info(u'User clicked window close while running action.')
-                    # TODO
+                    warning_text = u'User clicked cancel.'
+                    logger.warning(warning_text)
+                    dialog_errorwarning.ErrorWarningDialog(parent=self, dialog_type='warning', text=warning_text)\
+                        .ShowModal()
                     break
                 elif current_message[:5] == u'Error':
                     if len(current_message) > 6:
@@ -227,14 +230,20 @@ class FrameMain(frame_main_gui.FrameMain):
                         .ShowModal()
                     break
                 elif current_message.isdigit():
+                    # Convention: If the value in the queue is a digit set the gauge to that value.
                     self.ProgressGauge.SetValue(int(current_message))
+                else:
+                    # Convention: If value is a string (and not Finish/Error) replace the static text.
+                    self.ProgressGaugeStaticText.SetLabel(current_message)
+                    self.ProgressGifStaticText.SetLabel(current_message)
 
             except Exception as err:  # PyDeadObjectError may appear when thread finishes.
                 logger.error(u'Exception: %s.' % err)
 
     def cancel_action(self, event):
         logger.debug('Frame: Cancel (event "%s", id %i).' % (event.GetClassName(), event.GetId()))
-        self.status_queue.put(u'Cancel', False)
+        self.queue_function_to_gui.put(u'Cancel', False)
+        self.queue_gui_to_function.put(u'Cancel', False)
 
     def on_close(self, event):
         logger.debug('Frame: Close (event "%s", id %i).' % (event.GetClassName(), event.GetId()))

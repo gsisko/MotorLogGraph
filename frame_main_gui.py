@@ -61,9 +61,9 @@ class FrameMain ( wx.Frame ):
 		
 		PanelSizer.AddSpacer( ( 0, 65), 0, wx.EXPAND, 0 )
 		
-		self.ProgressStaticText = wx.StaticText( self.ProgressGaugePanel, wx.ID_ANY, _(u"Please wait ..."), wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.ProgressStaticText.Wrap( -1 )
-		PanelSizer.Add( self.ProgressStaticText, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5 )
+		self.ProgressGaugeStaticText = wx.StaticText( self.ProgressGaugePanel, wx.ID_ANY, _(u"Please wait ..."), wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.ProgressGaugeStaticText.Wrap( -1 )
+		PanelSizer.Add( self.ProgressGaugeStaticText, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 5 )
 		
 		self.ProgressGauge = wx.Gauge( self.ProgressGaugePanel, wx.ID_ANY, 100, wx.DefaultPosition, wx.Size( 130,-1 ), wx.GA_HORIZONTAL )
 		self.ProgressGauge.SetValue( 0 ) 
@@ -83,9 +83,9 @@ class FrameMain ( wx.Frame ):
 		
 		PanelSizer.AddSpacer( ( 0, 50), 0, 0, 0 )
 		
-		self.WaitStaticText = wx.StaticText( self.ProgressGifPanel, wx.ID_ANY, _(u"Please wait ..."), wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.WaitStaticText.Wrap( -1 )
-		PanelSizer.Add( self.WaitStaticText, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
+		self.ProgressGifStaticText = wx.StaticText( self.ProgressGifPanel, wx.ID_ANY, _(u"Please wait ..."), wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.ProgressGifStaticText.Wrap( -1 )
+		PanelSizer.Add( self.ProgressGifStaticText, 0, wx.ALIGN_CENTER|wx.ALL, 5 )
 		
 		
 		self.ProgressGifPanel.SetSizer( PanelSizer )
